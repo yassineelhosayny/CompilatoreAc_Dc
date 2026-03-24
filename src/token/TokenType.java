@@ -6,7 +6,7 @@ public enum TokenType {
 	TYFLOAT,		    //float : parola chiave
 	INT,			//int:costante  0 | [1-9][0-9]*
 	FLOAT,			//float:costante  [0-9]+\.[0-9]{1,5}
-	ID,					//identificatore. una lettera minuscola + zero o lettere minuscole o num   [a-z][a-z0-9]*
+	ID,					//identificatore. una lettera minuscola + insiemi di lettere minuscole o num   [a-z][a-z0-9]*
 	ASSIGN,				// = operatore assegna
 	PLUS,				// + operatore
 	MINUS,				// - operatore

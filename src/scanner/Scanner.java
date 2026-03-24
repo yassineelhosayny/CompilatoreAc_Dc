@@ -4,6 +4,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PushbackReader;
+import java.util.HashMap;
+import java.util.HashSet;
+
 
 import token.*;
 
@@ -11,21 +14,56 @@ public class Scanner {
 	final char EOF = (char) -1; 
 	private int riga;
 	private PushbackReader buffer;
+	private StringBuilder line= new StringBuilder();
 
-	// skpChars: insieme caratteri di skip (include EOF) e inizializzazione
-	// letters: insieme lettere 
-	// digits: cifre 
-
-	// operTkType: mapping fra caratteri '+', '-', '*', '/'  e il TokenType corrispondente
-	// delimTkType: mapping fra caratteri '=', ';' e il e il TokenType corrispondente
-
-	// keyWordsTkType: mapping fra le stringhe "print", "float", "int" e il TokenType  corrispondente
+	/* caratteri non considerati dallo scanner */
+	private HashSet<Character> skipChars;
+	/* lettere dell'alfabeto */
+	private HashSet<Character> letters;
+	/* insieme di cifre */
+	private HashSet<Character> digits;
+	/* insieme dei caratteri '+', '-', '*', '/', ';', '=' */
+	private HashMap<Character, TokenType> charTypeMap;
+	/* insieme delle parole chiave "print", "float", "int" */
+	private HashMap<String, TokenType> keywordsMap;
 
 	public Scanner(String fileName) throws FileNotFoundException {
 
 		this.buffer = new PushbackReader(new FileReader(fileName));
 		riga = 1;
-		// inizializzare campi che non hanno inizializzazione
+		// inizializzare campi
+		//carattere da ignorare (skipChars)
+		skipChars = new HashSet<Character>();
+		skipChars.add(' '); /*white space */
+		skipChars.add('\n');
+		skipChars.add('\r');
+		skipChars.add('\t');
+
+		//lettere (letters)
+		letters = new HashSet<Character>();
+		for(char c ='a';c <= 'z';c++)
+			letters.add(c);
+
+		//numbers
+		digits = new HashSet<Character>();
+		for(char c= '0'; c<='9'; c++)
+			digits.add(c);
+
+		//insieme dei caratteri
+		charTypeMap = new HashMap<Character, TokenType>();
+		charTypeMap.put('-',TokenType.MINUS);
+		charTypeMap.put('+',TokenType.PLUS);
+		charTypeMap.put('*',TokenType.MULTI);
+		charTypeMap.put('/',TokenType.DIVID);
+		charTypeMap.put('=',TokenType.ASSIGN);
+		charTypeMap.put(';',TokenType.SEMI);
+
+		//parole chiave
+		keywordsMap = new HashMap<String, TokenType>();
+		keywordsMap.put("print",TokenType.PRINT);
+		keywordsMap.put("int",TokenType.TYINT);
+		keywordsMap.put("float",TokenType.TYFLOAT);
+
 	}
 	
   // nextToken ritorna il prossimo token nel file di input e legge 
@@ -64,7 +102,7 @@ public class Scanner {
 		// eccezione lessicale dicendo la riga e il carattere che la hanno
 		// provocata. 
 
-
+return null;
 	}
 
 	// private Token scanId()
@@ -75,13 +113,21 @@ public class Scanner {
 
 	
 
-	private char readChar() throws IOException {
-		return ((char) this.buffer.read());
+	private char readChar() throws LexicalException {
+		try{
+			return ((char) this.buffer.read());
+		}catch(IOException e){
+			throw new LexicalException(line.toString(),riga,"Errore; non è stato possibile leggere il caratere,");
+		}
 	}
 
-	private char peekChar() throws IOException {
-		char c = (char) buffer.read();
-		buffer.unread(c);
-		return c;
+	private char peekChar() throws LexicalException {
+		try{
+			char c = (char) buffer.read();
+			buffer.unread(c);	
+			return c;
+		}catch(IOException e){
+			throw new LexicalException(line.toString(),riga,"Errore; non è stato possibile leggere il caratere,");
+		}
 	}
 }
