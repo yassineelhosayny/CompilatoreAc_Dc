@@ -7,4 +7,6 @@ public class LexicalException extends Exception {
 		super(msg+" nella Riga: "+riga+":-->'"+line+"'");
 	}
 
+
+
 }
