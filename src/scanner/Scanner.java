@@ -16,6 +16,7 @@ public class Scanner {
 	private PushbackReader buffer;
 
 	private StringBuilder line= new StringBuilder();
+	private Token currentToken;
 
 	/* caratteri non considerati dallo scanner */
 	private HashSet<Character> skipChars;
@@ -65,13 +66,20 @@ public class Scanner {
 		keywordsMap.put("int",TokenType.TYINT);
 		keywordsMap.put("float",TokenType.TYFLOAT);
 
+		//token attuale
+		currentToken = null;
 	}
 	
   // nextToken ritorna il prossimo token nel file di input e legge 
   // i caratteri del token ritornato (avanzando fino al carattere
   // successivo all'ultimo carattere del token)
 	public Token nextToken() throws LexicalException{
-
+		//consuma il token
+		if (currentToken != null) {
+			Token tem = currentToken;
+			currentToken = null;
+			return tem;
+		}
 		// nextChar contiene il prossimo carattere dell'input (non consumato).
 			char nextChar = peekChar();
 			
@@ -79,20 +87,16 @@ public class Scanner {
 		// Avanza nel buffer leggendo i carattere in skipChars
 		// incrementando riga se leggi '\n'.
 		// Se raggiungi la fine del file ritorna il Token EOF
-		if(skipChars.contains(nextChar)){
+		while(skipChars.contains(nextChar)){
+			if(nextChar == '\n'){
+				riga++;
+			}
 			readChar();
 			nextChar=peekChar();
-			while(skipChars.contains(nextChar)){
-				if(nextChar == EOF){
-					return new Token(TokenType.EOF,"EOF",riga);
-				}
-				if(nextChar == '\n'){
-					riga++;
-				}
-				readChar();
-				nextChar=peekChar();
-			}
 		}
+		if(nextChar == EOF){
+			return new Token(TokenType.EOF,"EOF",riga);
+		}		
 
 		// Se nextChar e' in letters
 		// return scanId()
@@ -103,13 +107,7 @@ public class Scanner {
 		// Se nextChar e' o in operators oppure delimitatore
 		// ritorna il Token associato con l'operatore o il delimitatore
 		// Attenzione agli operatori di assegnamento!
-		if(charTypeMap.containsKey((Object)nextChar)){
-			return scanOperator();
-		}
-
-		// Se nextChar e' ; o = 
-		// ritorna il Token associato
-		if(keywordsMap.containsKey((Object)nextChar)){
+		if(charTypeMap.containsKey(nextChar)){
 			return scanOperator();
 		}
 
@@ -128,28 +126,98 @@ public class Scanner {
 		throw new LexicalException(line.toString(),riga,"Errore; carattere sconosciuto");
 	}
 
-	private Token scanId(){
-		return null;
+	private Token scanId() throws LexicalException{
+		StringBuilder parola = new StringBuilder();
+		parola.append(readChar());
+ 
+		while(letters.contains(peekChar()) || digits.contains(peekChar())){
+			parola.append(readChar());
+		}
+		if(keywordsMap.containsKey(parola.toString())){
+			return new Token(keywordsMap.get(parola.toString()),parola.toString(),riga);
+		}
+		//else id
+		return new Token(TokenType.ID,parola.toString(),riga);
+
+	}
+	private boolean assignOp() throws LexicalException{
+		return peekChar() == '=';
 	}
 	
 	private Token scanOperator() throws LexicalException{
 		char nextChar = readChar(); 
-			boolean op = (nextChar == '+' || nextChar == '-' || nextChar == '*' || nextChar == '/');
-			if(op){
-				if(peekChar()=='='){
-				//operatore assegnamento
+		StringBuilder op = new StringBuilder();
+		op.append(nextChar);
+
+		switch(nextChar){
+			case '-':
+				if(assignOp()){
+					op.append(readChar());
+					return new Token(TokenType.MINUS_ASSIGN,op.toString(),riga);
 				}
-				
-			}
-		return null;
-	}
-		
-	private Token scanNumber(){
+			  return new Token(TokenType.MINUS,op.toString(),riga);
 
-		return null;
+			case '+':
+				if(assignOp()){
+					op.append(readChar());
+					return new Token(TokenType.PLUS_ASSIGN,op.toString(),riga);
+				}
+			  return new Token(TokenType.PLUS,op.toString(),riga);
+
+			case '*':
+				if(assignOp()){
+					op.append(readChar());
+					return new Token(TokenType.MULTI_ASSIGN,op.toString(),riga);
+				}
+			  return new Token(TokenType.MULTI,op.toString(),riga);
+
+			case '/':
+				if(assignOp()){
+					op.append(readChar());
+					return new Token(TokenType.DIVID_ASSIGN,op.toString(),riga);
+				}
+			  return new Token(TokenType.DIVID,op.toString(),riga);
+
+			case '=':
+			  return new Token(TokenType.ASSIGN,op.toString(),riga);
+
+			case ';':
+			  return new Token(TokenType.SEMI,op.toString(),riga);
+			default:
+				throw new LexicalException(line.toString(), riga, "Errore; carattere sconosciuto Mentre la lettura del operatore.");
+		}	
 	}
 
-	
+
+	private Token scanNumber() throws LexicalException{
+		StringBuilder num = new StringBuilder(); 
+		while(digits.contains(peekChar())){
+			num.append(readChar());
+		}
+		if(peekChar() == '.'){
+			num.append(readChar());
+			int len = 0;
+				while(digits.contains(peekChar())){
+					num.append(readChar());
+					len++;
+				}
+				if(len == 0  || len > 5){
+					throw new LexicalException(line.toString(),riga,"Errore; parte frazionaria del numero non valida");
+				}
+				else{
+					return new Token(TokenType.FLOAT,num.toString(),riga);
+				}
+		}
+		return new Token(TokenType.INT,num.toString(),riga);
+
+	}
+
+	public Token peekToken() throws LexicalException{
+		if(this.currentToken == null){
+			this.currentToken = nextToken();
+		}
+		return this.currentToken;
+	}
 
 	private char readChar() throws LexicalException {
 		try{
@@ -161,9 +229,13 @@ public class Scanner {
 
 	private char peekChar() throws LexicalException {
 		try{
-			char c = (char) buffer.read();
+			int c = buffer.read();
+
+			if(c == -1)
+				 return EOF;
+
 			buffer.unread(c);	
-			return c;
+			return (char)c;
 		}catch(IOException e){
 			throw new LexicalException(line.toString(),riga,"Errore; non è stato possibile leggere il caratere,");
 		}

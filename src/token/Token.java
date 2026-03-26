@@ -30,6 +30,6 @@ public class Token {
     }
 
     public String toString() {
-        return "Token: in Riga= "+this.riga+" | Tipo = "+getType().toString()+(this.val != null ?  " | Value="+this.val : "");
+        return "Token: in Riga= "+this.riga+" | Tipo = "+getType().toString()+(this.val != null ?  " | Value= < "+this.val+" >" : "");
     }
 }
