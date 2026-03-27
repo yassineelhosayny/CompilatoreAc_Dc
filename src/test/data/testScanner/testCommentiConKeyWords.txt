@@ -1,0 +1,15 @@
+
+//progetto Flt,  int float print 4,5
+
+float
+
+/* commento int 5.4 */
+/* int abc= 3;
+    abc += 2;
+    print abc */
+print
+nome
+
+/
+
+//comento EOF

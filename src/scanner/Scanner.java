@@ -95,7 +95,7 @@ public class Scanner {
 			nextChar=peekChar();
 		}
 		if(nextChar == EOF){
-			return new Token(TokenType.EOF,"EOF",riga);
+			return new Token(TokenType.EOF,riga);
 		}		
 
 		// Se nextChar e' in letters
@@ -123,7 +123,14 @@ public class Scanner {
 		// eccezione lessicale dicendo la riga e il carattere che la hanno
 		// provocata. 
 
-		throw new LexicalException(line.toString(),riga,"Errore; carattere sconosciuto");
+		throw new LexicalException(line.toString(),riga,nextChar,"Errore; carattere sconosciuto");
+	}
+
+	private void aggiornaLine(char c) {
+		if(c == '\n')
+			this.line.setLength(0);
+		else if(c != EOF)	
+			this.line.append(c);
 	}
 
 	private Token scanId() throws LexicalException{
@@ -134,7 +141,7 @@ public class Scanner {
 			parola.append(readChar());
 		}
 		if(keywordsMap.containsKey(parola.toString())){
-			return new Token(keywordsMap.get(parola.toString()),parola.toString(),riga);
+			return new Token(keywordsMap.get(parola.toString()),riga);
 		}
 		//else id
 		return new Token(TokenType.ID,parola.toString(),riga);
@@ -142,6 +149,48 @@ public class Scanner {
 	}
 	private boolean assignOp() throws LexicalException{
 		return peekChar() == '=';
+	}
+	private int isCommento() throws LexicalException{
+		char nextChar = peekChar();
+		//commento tipo //
+		if(nextChar == '/'){
+			readChar();
+			while(true){
+				char c = peekChar();
+				if(c == EOF){
+					return 2;
+					}
+				if(c == '\n'){
+					readChar();
+					riga++;
+					return 1; //commento di lenea stato saltato
+				}
+				readChar();
+			}
+		}
+		//commento tipo /* */
+		else if(nextChar=='*'){
+			readChar();
+			char ultimo='\0';
+
+			while(true){
+			char c = readChar();
+				if(c == EOF){
+					throw new LexicalException(line.toString(), riga, "Errore: Commento multilinea non è chiuso");
+				}
+				if(c == '\n'){
+					riga++;
+				}
+				if (ultimo == '*' && c == '/') {
+                	return 1;
+           		}
+				ultimo = c;	
+			}
+		}
+		
+		//non è un commento
+		else return 0;
+		
 	}
 	
 	private Token scanOperator() throws LexicalException{
@@ -176,7 +225,15 @@ public class Scanner {
 					op.append(readChar());
 					return new Token(TokenType.DIVID_ASSIGN,op.toString(),riga);
 				}
-			  return new Token(TokenType.DIVID,op.toString(),riga);
+				int statoIfCommento = isCommento();
+				if(statoIfCommento == 1){
+			  			return nextToken();
+				}
+				if(statoIfCommento == 2){
+						return new Token(TokenType.EOF,riga);
+				}
+
+				return new Token(TokenType.DIVID,op.toString(),riga);
 
 			case '=':
 			  return new Token(TokenType.ASSIGN,op.toString(),riga);
@@ -187,7 +244,6 @@ public class Scanner {
 				throw new LexicalException(line.toString(), riga, "Errore; carattere sconosciuto Mentre la lettura del operatore.");
 		}	
 	}
-
 
 	private Token scanNumber() throws LexicalException{
 		StringBuilder num = new StringBuilder(); 
@@ -221,7 +277,14 @@ public class Scanner {
 
 	private char readChar() throws LexicalException {
 		try{
-			return ((char) this.buffer.read());
+			int v = this.buffer.read();
+			if(v == -1){
+				return EOF;
+			}
+			char c = (char) v;
+			aggiornaLine(c);
+			return c;
+
 		}catch(IOException e){
 			throw new LexicalException(line.toString(),riga,"Errore; non è stato possibile leggere il caratere,");
 		}
