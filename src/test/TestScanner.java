@@ -7,7 +7,7 @@ import java.io.FileNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import scanner.LexicalException;
+import eccezioni.LexicalException;
 import scanner.Scanner;
 import token.Token;
 import token.TokenType;
