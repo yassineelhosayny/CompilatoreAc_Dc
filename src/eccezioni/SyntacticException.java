@@ -3,7 +3,12 @@ package eccezioni;
 import token.TokenType;
 
 public class SyntacticException extends Exception{
-    public SyntacticException(String msg){
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	public SyntacticException(String msg){
         super("Syntactic Error: "+ msg); 
     }
 
